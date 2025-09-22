@@ -8,7 +8,7 @@ class InMemoryDB:
         self.counts = defaultdict(int)
         self.transaction_stack = []
 
-    def set(self, key, value):
+    def set_cmd(self, key, value):
         old_value = self.db.get(key)
 
         if old_value is not None:
@@ -20,10 +20,10 @@ class InMemoryDB:
         if self.transaction_stack:
             self.transaction_stack[-1][key] = old_value
 
-    def get(self, key):
+    def get_cmd(self, key):
         return self.db.get(key, "NULL")
     
-    def unset(self, key):
+    def unset_cmd(self, key):
         if key in self.db:
             value = self.db[key]
             del self.db[key]
