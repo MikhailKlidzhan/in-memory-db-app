@@ -18,20 +18,25 @@ class InMemoryDB:
         self.counts[value] += 1
 
         if self.transaction_stack:
-            self.transaction_stack[-1][key] = old_value
+            current_transaction = self.transaction_stack[-1]
+
+            if key not in current_transaction:
+                current_transaction[key] = old_value
 
     def get_cmd(self, key):
         return self.db.get(key, "NULL")
     
     def unset_cmd(self, key):
         if key in self.db:
-            value = self.db[key]
+            old_value = self.db[key]
             del self.db[key]
             
-            self.counts[value] -= 1
+            self.counts[old_value] -= 1
 
             if self.transaction_stack:
-                self.transaction_stack[-1][key] = value
+                current_transaction = self.transaction_stack[-1]
+                if key not in current_transaction:
+                    current_transaction[key] = old_value
 
     def counts_cmd(self, value):
         return self.counts.get(value, 0)
@@ -48,11 +53,12 @@ class InMemoryDB:
             return "NO TRANSACTION"
         
         transaction = self.transaction_stack.pop()
-
         for key, old_value in transaction.items():
-            current_value = self.db.get(key)  
+            current_value = self.db.get(key)
+            
             if current_value is not None:
                 self.counts[current_value] -= 1
+            
             if old_value is not None:
                 self.db[key] = old_value
                 self.counts[old_value] += 1
@@ -66,14 +72,7 @@ class InMemoryDB:
         if not self.transaction_stack:
             return "NO TRANSACTION"
         
-        current_transaction = self.transaction_stack.pop()
-
-        if self.transaction_stack:
-            parent_transaction = self.transaction_stack[-1]
-            for key, old_value in current_transaction.items():
-                if key not in parent_transaction:
-                    parent_transaction[key] = old_value
-
+        self.transaction_stack.pop()
         return None
 
 
